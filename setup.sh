@@ -54,7 +54,7 @@ ask_db_blank_random () {
   fi
   IFS= read -r input || true
   if [ -z "$input" ]; then
-    if [ -n "$current" ] then
+    if [ -n "$current" ]; then
       input="$current"
     else
       if [ "$kind" = "user" ]; then
