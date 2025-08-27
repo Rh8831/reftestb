@@ -26,9 +26,10 @@ gen_user () { echo "bot_$(head -c 32 /dev/urandom | tr -dc 'a-z0-9' | head -c 10
 
 ask_required () {
   local var="$1"; local question="$2"
-  local current="$(get_kv "$var")"
+  local current
+  current="$(get_kv "$var")"
   local val=""
-  while [ -z "${val:-}" ]; do
+  while [ -z "$val" ]; do
     if [ -n "$current" ]; then
       printf "%s [%s]: " "$question" "$current"
     else
@@ -38,14 +39,17 @@ ask_required () {
     if [ -z "$val" ] && [ -n "$current" ]; then
       val="$current"
     fi
-    [ -z "$val" ] && echo "This value is required."
+    if [ -z "$val" ]; then
+      echo "This value is required."
+    fi
   done
   set_kv "$var" "$val"
 }
 
 ask_db_blank_random () {
-  local var="$1"; local question="$2"; local kind="$3" # kind=user|pass|root
-  local current="$(get_kv "$var")"
+  local var="$1"; local question="$2"; local kind="$3"
+  local current
+  current="$(get_kv "$var")"
   local input=""
   if [ -n "$current" ]; then
     printf "%s [%s] (blank = random): " "$question" "$current"
