@@ -2,6 +2,8 @@
 set -euo pipefail
 
 ENV_FILE=".env"
+COMPOSE_URL="https://raw.githubusercontent.com/Rh8831/reftestb/refs/heads/main/docker-compose.yml"
+COMPOSE_FILE="docker-compose.yml"
 
 # ---------- helpers ----------
 set_kv () {
@@ -106,6 +108,7 @@ fi
 [ -n "$(get_kv MYSQL_DB)" ]   || set_kv "MYSQL_DB"   "telegram_bot"
 [ -n "$(get_kv IMAGE)" ]      || set_kv "IMAGE"      "ghcr.io/rh8831/refbot:latest"
 
+# ---------- ask user ----------
 echo "---- Telegram ----"
 ask_required "TELEGRAM_TOKEN" "What is your Telegram API token"
 ask_required "CHANNEL_ID" "What is your channel ID (@username or -100XXXXXXXXXX)"
@@ -118,15 +121,7 @@ ask_db_blank_random "MYSQL_PASSWORD" "MySQL app password" "pass"
 ask_db_blank_random "MYSQL_ROOT_PASSWORD" "MySQL ROOT password" "root"
 
 echo "---- GHCR login (private image pull) ----"
-echo "Image to pull (press Enter to keep default):"
-echo "  $(get_kv IMAGE)"
-printf "Override IMAGE? (leave blank to keep): "
-read -r NEW_IMAGE || true
-if [ -n "${NEW_IMAGE:-}" ]; then
-  set_kv IMAGE "$NEW_IMAGE"
-fi
-
-printf "GitHub username (for ghcr.io): "
+printf "GitHub username (for ghcr.io, Enter to skip): "
 read -r REG_USER || true
 if [ -n "${REG_USER:-}" ]; then
   printf "GitHub PAT with read:packages (input hidden): "
@@ -136,25 +131,28 @@ if [ -n "${REG_USER:-}" ]; then
     if echo "$REG_TOKEN" | docker login ghcr.io -u "$REG_USER" --password-stdin; then
       echo "✓ Logged in to ghcr.io as $REG_USER"
     else
-      echo "✗ Login failed. You can run this later:"
-      echo "  docker login ghcr.io -u \"$REG_USER\" -p <your_pat>"
+      echo "✗ Login failed. You can run manually: docker login ghcr.io -u \"$REG_USER\" -p <your_pat>"
     fi
-  else
-    echo "No token provided. Skipping login."
   fi
 else
-  echo "No username provided. Skipping login."
+  echo "Skipping GHCR login."
 fi
 
 echo "Saved to .env."
-echo "Using IMAGE=$(get_kv IMAGE)"
+
+# ---------- fetch docker-compose.yml ----------
+if [ ! -f "$COMPOSE_FILE" ]; then
+  echo "Fetching docker-compose.yml from $COMPOSE_URL ..."
+  curl -fsSL "$COMPOSE_URL" -o "$COMPOSE_FILE"
+  echo "Saved as $COMPOSE_FILE"
+fi
 
 # ---------- start services ----------
 COMPOSE_BIN="$(detect_compose || true)"
-if [ -n "$COMPOSE_BIN" ] && [ -f "docker-compose.yml" ]; then
+if [ -n "$COMPOSE_BIN" ] && [ -f "$COMPOSE_FILE" ]; then
   echo "Starting services with $COMPOSE_BIN up -d ..."
   $COMPOSE_BIN up -d
   echo "Done. Use '$COMPOSE_BIN logs -f' to follow logs."
 else
-  echo "docker compose not found or docker-compose.yml missing. Start services manually later."
+  echo "docker compose not found or $COMPOSE_FILE missing. Start services manually later."
 fi
