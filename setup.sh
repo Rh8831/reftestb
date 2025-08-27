@@ -54,7 +54,7 @@ ask_db_blank_random () {
   fi
   IFS= read -r input || true
   if [ -z "$input" ]; then
-    if [ -n "$current" ]; then
+    if [ -n "$current" ] then
       input="$current"
     else
       if [ "$kind" = "user" ]; then
@@ -89,6 +89,12 @@ detect_compose () {
     echo ""
   fi
 }
+
+# ---------- preflight ----------
+if ! command -v docker >/dev/null 2>&1; then
+  echo "Docker is not installed. Install Docker and rerun this script."
+  exit 1
+fi
 
 # ---------- defaults ----------
 [ -n "$(get_kv MYSQL_HOST)" ] || set_kv "MYSQL_HOST" "mysql"
@@ -126,7 +132,8 @@ if [ -n "${REG_USER:-}" ]; then
     if echo "$REG_TOKEN" | docker login ghcr.io -u "$REG_USER" --password-stdin; then
       echo "✓ Logged in to ghcr.io as $REG_USER"
     else
-      echo "✗ Login failed. You can run this later:  docker login ghcr.io -u <user> -p <token>"
+      echo "✗ Login failed. You can run this later:"
+      echo "  docker login ghcr.io -u \"$REG_USER\" -p <your_pat>"
     fi
   else
     echo "No token provided. Skipping login."
@@ -136,6 +143,7 @@ else
 fi
 
 echo "Saved to .env."
+echo "Using IMAGE=$(get_kv IMAGE)"
 
 # ---------- start services ----------
 COMPOSE_BIN="$(detect_compose || true)"
