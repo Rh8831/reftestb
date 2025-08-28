@@ -1,14 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ENV_FILE=".env"
+APP_DIR="/app"
+ENV_FILE="$APP_DIR/.env"
 COMPOSE_URL="https://raw.githubusercontent.com/Rh8831/reftestb/refs/heads/main/docker-compose.yml"
-COMPOSE_FILE="docker-compose.yml"
+COMPOSE_FILE="$APP_DIR/docker-compose.yml"
 
 # ---------- helpers ----------
 set_kv () {
   local key="$1"; local val="$2"
-  if [ -f "$ENV_FILE" ] && grep -q "^$key=" "$ENV_FILE"; then
+  mkdir -p "$APP_DIR"
+  [ -f "$ENV_FILE" ] || touch "$ENV_FILE"
+  if grep -q "^$key=" "$ENV_FILE"; then
     local tmp="${ENV_FILE}.tmp"
     awk -v k="$key" -v v="$val" 'BEGIN{FS=OFS="="} $1==k{$2=v; print; next} {print}' "$ENV_FILE" > "$tmp"
     mv "$tmp" "$ENV_FILE"
@@ -138,7 +141,7 @@ else
   echo "Skipping GHCR login."
 fi
 
-echo "Saved to .env."
+echo "✓ Saved to $ENV_FILE."
 
 # ---------- fetch docker-compose.yml ----------
 if [ ! -f "$COMPOSE_FILE" ]; then
@@ -150,9 +153,9 @@ fi
 # ---------- start services ----------
 COMPOSE_BIN="$(detect_compose || true)"
 if [ -n "$COMPOSE_BIN" ] && [ -f "$COMPOSE_FILE" ]; then
-  echo "Starting services with $COMPOSE_BIN up -d ..."
-  $COMPOSE_BIN up -d
-  echo "Done. Use '$COMPOSE_BIN logs -f' to follow logs."
+  echo "Starting services with $COMPOSE_BIN -f $COMPOSE_FILE up -d ..."
+  $COMPOSE_BIN -f "$COMPOSE_FILE" up -d
+  echo "Done. Use '$COMPOSE_BIN -f $COMPOSE_FILE logs -f' to follow logs."
 else
   echo "docker compose not found or $COMPOSE_FILE missing. Start services manually later."
 fi
