@@ -19,7 +19,7 @@ services:
       - refbot-mysql-data:/var/lib/mysql
 
   bot:
-    image: ${IMAGE:-ghcr.io/rh8831/refbot:latest}   # Default points to your GHCR image
+    image: ${IMAGE:-ghcr.io/rh8831/refbot:latest}
     container_name: refbot-bot
     restart: unless-stopped
     depends_on:
