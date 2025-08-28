@@ -5,7 +5,8 @@ APP_DIR="/app"
 ENV_FILE="$APP_DIR/.env"
 COMPOSE_URL="https://raw.githubusercontent.com/Rh8831/reftestb/refs/heads/main/docker-compose.yml"
 COMPOSE_FILE="$APP_DIR/docker-compose.yml"
-
+mkdir -p "$APP_DIR"
+touch "$ENV_FILE"
 # ---------- helpers ----------
 set_kv () {
   local key="$1"; local val="$2"
